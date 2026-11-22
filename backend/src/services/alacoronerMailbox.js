@@ -7,13 +7,14 @@ import { NEXT_ACCOUNT_SORT_ORDER } from './accountOrder.js';
 const ISSUER='https://id.alacoroner.org/application/o/mailflow/';
 const BRIDGE='https://admin.coroner.app/internal/mailflow/mailbox';
 const ADDRESS=/^[a-z0-9]+(?:[.-][a-z0-9]+)*@alacoroner\.org$/;
-export async function connectManagedMailbox({userId,oidcEmail,issuer}={}){
+export async function connectManagedMailbox({userId,oidcEmail,oidcUsername,issuer}={}){
   const token=String(process.env.MAILFLOW_BRIDGE_TOKEN||'');
-  if(!token||issuer!==ISSUER||typeof oidcEmail!=='string'||!oidcEmail.includes('@'))return false;
+  if(!token||issuer!==ISSUER||typeof oidcEmail!=='string'||!oidcEmail.includes('@')||
+     typeof oidcUsername!=='string'||!oidcUsername.trim())return false;
   const response=await fetch(BRIDGE,{method:'POST',redirect:'error',
     signal:AbortSignal.timeout(8000),
     headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({issuer:ISSUER,oidc_email:oidcEmail})});
+    body:JSON.stringify({issuer:ISSUER,oidc_email:oidcEmail,oidc_username:oidcUsername})});
   if(response.status===404||response.status===503)return false; // mailbox not provisioned yet
   if(!response.ok)throw new Error('Central mailbox handoff HTTP '+response.status);
   const data=await response.json();
