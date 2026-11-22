@@ -203,7 +203,7 @@ function rememberOidcSession(req, providerId, idToken) {
 // policy, unless the provider is marked as already enforcing MFA. A remembered device skips
 // it, as it does for password login. When a second step is needed the browser goes to the
 // login page, which asks for it; the provider rides along to the session it creates.
-async function finishSsoLogin(req, res, client, user, provider, idToken, oidcEmail) {
+async function finishSsoLogin(req, res, client, user, provider, idToken, oidcEmail, oidcUsername) {
   const { rows: [factors] } = await client.query(
     'SELECT totp_enabled, recovery_email FROM users WHERE id = $1',
     [user.id]
@@ -226,7 +226,7 @@ async function finishSsoLogin(req, res, client, user, provider, idToken, oidcEma
   // Only the Authentik provider for ALA Coroner is eligible; no other OIDC user
   // can request another person's mailbox through this integration.
   try {
-    await connectManagedMailbox({userId:user.id,oidcEmail,issuer:provider.issuer_url});
+    await connectManagedMailbox({userId:user.id,oidcEmail,oidcUsername,issuer:provider.issuer_url});
   } catch(error) {
     console.warn('[managed-mailbox] Automatic connection unavailable:',error.message);
   }
@@ -637,7 +637,7 @@ oidcBrowserRouter.get('/:slug/callback', async (req, res) => {
         'UPDATE user_identities SET last_used_at = NOW() WHERE issuer = $1 AND subject = $2',
         [issuer, subject]
       );
-      return finishSsoLogin(req, res, client, user, provider, tokenData.id_token, email);
+      return finishSsoLogin(req, res, client, user, provider, tokenData.id_token, email, payload.preferred_username);
     }
 
     // No existing identity — consult provisioning_mode
@@ -688,7 +688,7 @@ oidcBrowserRouter.get('/:slug/callback', async (req, res) => {
         logAuthEvent('identity_linked', { userId: user.id, username: user.username, ip: req.ip, success: true });
       }
       await maybeBackfillDisplayName(client, user.id, payload);
-      return finishSsoLogin(req, res, client, user, provider, tokenData.id_token, email);
+      return finishSsoLogin(req, res, client, user, provider, tokenData.id_token, email, payload.preferred_username);
     }
 
     if (mode === 'open') {
@@ -748,7 +748,7 @@ oidcBrowserRouter.get('/:slug/callback', async (req, res) => {
         if (linkedRow?.linked) {
           logAuthEvent('identity_linked', { userId: user.id, username: user.username, ip: req.ip, success: true });
         }
-        return finishSsoLogin(req, res, client, user, provider, tokenData.id_token, email);
+        return finishSsoLogin(req, res, client, user, provider, tokenData.id_token, email, payload.preferred_username);
       } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
         throw err;
