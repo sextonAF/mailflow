@@ -3,6 +3,7 @@
 // Existing accounts (even with different credentials) are never overwritten.
 import { pool } from './db.js';
 import { encrypt } from './encryption.js';
+import { NEXT_ACCOUNT_SORT_ORDER } from './accountOrder.js';
 const ISSUER='https://id.alacoroner.org/application/o/mailflow/';
 const BRIDGE='https://admin.coroner.app/internal/mailflow/mailbox';
 const ADDRESS=/^[a-z0-9]+(?:[.-][a-z0-9]+)*@alacoroner\.org$/;
@@ -32,10 +33,10 @@ export async function connectManagedMailbox({userId,oidcEmail,issuer}={}){
       `INSERT INTO email_accounts
       (user_id,name,sender_name,email_address,color,protocol,
        imap_host,imap_port,imap_tls,imap_skip_tls_verify,
-       smtp_host,smtp_port,smtp_tls,auth_user,auth_pass,smtp_auth_user,smtp_auth_pass)
+       smtp_host,smtp_port,smtp_tls,auth_user,auth_pass,smtp_auth_user,smtp_auth_pass,sort_order)
        VALUES ($1,$2,NULL,$3,'#6366f1','imap',
        'imap.forwardemail.net',993,true,false,
-       'smtp.forwardemail.net',465,'SSL',$3,$4,$3,$5)`,
+       'smtp.forwardemail.net',465,'SSL',$3,$4,$3,$5,${NEXT_ACCOUNT_SORT_ORDER})`,
       [userId,'ALA Coroner Mail',data.address,encrypt(data.password),encrypt(data.password)]
     );
     await client.query('COMMIT');
