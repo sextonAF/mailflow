@@ -66,6 +66,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DATABASE_URL: ${DATABASE_URL:-}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      # Authenticated Central Admin -> MailFlow mailbox handoff (ALA Coroner only).
+      MAILFLOW_BRIDGE_TOKEN: ${MAILFLOW_BRIDGE_TOKEN:-}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
