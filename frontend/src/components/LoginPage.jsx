@@ -113,6 +113,21 @@ export default function LoginPage() {
     }
   }, [t]);
 
+  // With local password login disabled and exactly one SSO provider, begin the
+  // organization's sign-in immediately. Preserve the login page for errors,
+  // recovery/invitation links, and MailFlow's second-factor challenges.
+  useEffect(() => {
+    if (!internalAuthDisabled || oidcProviders.length !== 1 ||
+        oidcProviders[0]?.slug !== 'authentik' || mode !== 'login' ||
+        oidcError || totpRequired || emailOtpRequired || mfaEnrollRequired ||
+        inviteToken || resetToken) return;
+    const params = new URLSearchParams(window.location.search);
+    if (['oidc_error', 'oidc_mfa', 'invite', 'reset_token'].some(key => params.has(key)) ||
+        sessionStorage.getItem('mailflow_reset_token')) return;
+    window.location.replace('/auth/oidc/authentik/start');
+  }, [internalAuthDisabled, oidcProviders, mode, oidcError,
+      totpRequired, emailOtpRequired, mfaEnrollRequired, inviteToken, resetToken]);
+
   const submit = async (e) => {
     e.preventDefault();
     if (!username || !password) return;
